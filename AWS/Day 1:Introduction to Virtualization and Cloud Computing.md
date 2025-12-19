@@ -195,6 +195,8 @@ A data center is a facility used to house computer systems and associated compon
 
 Cloud computing services are typically categorized into three main service models, often referred to as the "Cloud Computing Stack":
 
+![Cloud Service Models](../Assets/Cloud-Service-Models.png)
+
 ### 1. Infrastructure as a Service (IaaS)
 
 **Definition**: Provides virtualized computing resources over the internet. Users rent IT infrastructure—servers, virtual machines, storage, networks, and operating systems—on a pay-as-you-go basis.
