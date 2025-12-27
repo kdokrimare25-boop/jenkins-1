@@ -344,6 +344,339 @@ df -hT
 
 ---
 
+## Extended and Logical Partitions
+
+### Understanding Extended and Logical Partitions
+
+When you need more than 4 partitions on a disk, you use:
+- **Extended Partition**: Acts as a container (counts as one primary partition)
+- **Logical Partitions**: Created inside the extended partition (unlimited number)
+
+**Limitation**: Maximum 4 primary partitions per disk. To create more partitions:
+1. Create 3 primary partitions
+2. Create 1 extended partition
+3. Create multiple logical partitions inside the extended partition
+
+### Creating Extended and Logical Partitions: Step-by-Step
+
+**Prerequisites:**
+- Attach a 100 GiB EBS volume to your EC2 instance
+- SSH into the instance
+
+### Step 1: Check Available Storage
+
+```bash
+# List all block devices
+lsblk
+
+# Check disk usage and mount points
+df -hT
+```
+
+**Output Example:**
+```
+NAME    MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+xvda    202:0    0   8G  0 disk /
+xvdf    202:80   0 100G  0 disk
+```
+
+### Step 2: Create Extended Partition
+
+```bash
+# Start fdisk for the volume
+sudo fdisk /dev/xvdf
+```
+
+**Inside fdisk, create extended partition:**
+
+```
+Command (m for help): n
+Partition type:
+   p   primary (0 primary, 0 extended, 4 free)
+   e   extended
+Select (default p): e
+Partition number (1-4, default 1): 1
+First sector (2048-209715199, default 2048): [Press Enter]
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (2048-209715199, default 209715199): [Press Enter]
+Command (m for help): w
+The partition table has been altered.
+```
+
+### Step 3: Create Logical Partitions
+
+After creating extended partition, create logical partitions inside it:
+
+```bash
+# Start fdisk again
+sudo fdisk /dev/xvdf
+```
+
+**Inside fdisk, create logical partitions:**
+
+```
+Command (m for help): n
+Partition type:
+   p   primary (0 primary, 1 extended, 3 free)
+   l   logical (numbered from 5)
+Select (default p): l
+Adding logical partition 5
+First sector (4096-209715199, default 4096): [Press Enter]
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (4096-209715199, default 209715199): +20G
+Command (m for help): n
+Partition type:
+   p   primary (0 primary, 1 extended, 3 free)
+   l   logical (numbered from 5)
+Select (default p): l
+Adding logical partition 6
+First sector (41947136-209715199, default 41947136): [Press Enter]
+Last sector, +/-sectors or +/-size{K,M,G,T,P} (41947136-209715199, default 209715199): +30G
+Command (m for help): w
+The partition table has been altered.
+```
+
+**Note:** Logical partitions are numbered starting from 5 (xvdf5, xvdf6, etc.)
+
+### Step 4: Update Partition Table
+
+```bash
+# Reload partition table
+sudo partprobe /dev/xvdf
+
+# Verify partitions
+lsblk
+```
+
+**Expected Output:**
+```
+NAME    MAJ:MIN RM SIZE RO TYPE MOUNTPOINT
+xvda    202:0    0   8G  0 disk /
+xvdf    202:80   0 100G  0 disk
+├─xvdf1 202:81   0 100G  0 part    # Extended partition
+├─xvdf5 202:85   0  20G  0 part    # Logical partition 1
+└─xvdf6 202:86   0  30G  0 part    # Logical partition 2
+```
+
+### Step 5: Create File Systems on Logical Partitions
+
+```bash
+# Format logical partition 5 with ext4
+sudo mkfs.ext4 /dev/xvdf5
+
+# Format logical partition 6 with xfs
+sudo mkfs.xfs /dev/xvdf6
+```
+
+### Step 6: Mount Logical Partitions
+
+```bash
+# Create mount points
+sudo mkdir /mnt/logical1
+sudo mkdir /mnt/logical2
+
+# Mount logical partitions
+sudo mount /dev/xvdf5 /mnt/logical1
+sudo mount /dev/xvdf6 /mnt/logical2
+
+# Verify mounts
+df -hT
+lsblk
+```
+
+---
+
+## Permanent Mount
+
+### What is Permanent Mount?
+
+A **permanent mount** ensures that partitions are automatically mounted at system boot. This is configured in `/etc/fstab` (file systems table).
+
+### Why Permanent Mount?
+
+- **Automatic mounting**: Partitions mount automatically on boot
+- **No manual intervention**: No need to manually mount after reboot
+- **Consistent access**: Mount points are always available
+
+### Step 1: Get Partition Information
+
+Before adding to `/etc/fstab`, get the UUID or device path:
+
+```bash
+# Get UUID of partition
+sudo blkid /dev/xvdf1
+
+# Output example:
+# /dev/xvdf1: UUID="a1b2c3d4-e5f6-7890-abcd-ef1234567890" TYPE="ext4"
+```
+
+**Or get device path:**
+```bash
+# List block devices with UUIDs
+lsblk -f
+```
+
+### Step 2: Create Mount Point (if not exists)
+
+```bash
+# Create mount point directory
+sudo mkdir -p /mnt/mydata
+```
+
+### Step 3: Edit /etc/fstab
+
+```bash
+# Backup fstab first
+sudo cp /etc/fstab /etc/fstab.backup
+
+# Edit fstab
+sudo vim /etc/fstab
+```
+
+### Step 4: Add Entry to /etc/fstab
+
+Add a line with the following format:
+
+**Using UUID (Recommended):**
+```
+UUID=a1b2c3d4-e5f6-7890-abcd-ef1234567890  /mnt/mydata  ext4  defaults  0  0
+```
+
+**Using Device Path:**
+```
+/dev/xvdf1  /mnt/mydata  ext4  defaults  0  0
+```
+
+### Step 5: Test fstab Configuration
+
+```bash
+# Test fstab syntax (very important!)
+sudo mount -av
+
+# If no errors, configuration is correct
+# If errors occur, fix them before rebooting
+```
+
+### Step 6: Verify Mount
+
+```bash
+# Check if mounted
+df -hT | grep mydata
+
+# Or
+mount | grep mydata
+```
+
+### Step 7: Reboot to Test (Optional)
+
+```bash
+# Reboot the system
+sudo reboot
+
+# After reboot, verify mount
+df -hT
+```
+
+---
+
+## /etc/fstab Fields
+
+The `/etc/fstab` file contains 6 fields separated by spaces or tabs:
+
+### Field Format:
+```
+<device>  <mount_point>  <file_system_type>  <options>  <dump>  <pass>
+```
+
+### Field 1: Device (UUID or Device Path)
+
+**UUID (Recommended):**
+```
+UUID=a1b2c3d4-e5f6-7890-abcd-ef1234567890
+```
+
+**Device Path:**
+```
+/dev/xvdf1
+```
+
+**Why UUID is preferred:** Device names can change, but UUIDs remain constant.
+
+### Field 2: Mount Point
+
+The directory where the partition will be mounted:
+```
+/mnt/mydata
+/home/data
+/var/www
+```
+
+### Field 3: File System Type
+
+The type of file system:
+- `ext4` - Extended file system 4
+- `xfs` - XFS file system
+- `ext3` - Extended file system 3
+- `swap` - Swap partition
+- `auto` - Auto-detect
+
+### Field 4: Mount Options
+
+Common options:
+- `defaults` - Uses default options (rw, suid, dev, exec, auto, nouser, async)
+- `rw` - Read-write
+- `ro` - Read-only
+- `noexec` - Don't allow execution of binaries
+- `nosuid` - Don't allow setuid/setgid
+- `nodev` - Don't interpret device files
+- `noatime` - Don't update access times (improves performance)
+- `user` - Allow users to mount
+- `nofail` - Don't fail if device doesn't exist
+
+**Multiple options separated by commas:**
+```
+defaults,noatime
+```
+
+### Field 5: Dump
+
+Backup utility flag:
+- `0` - Don't backup (most common)
+- `1` - Backup this filesystem
+
+### Field 6: Pass (fsck order)
+
+File system check order:
+- `0` - Don't check
+- `1` - Check first (usually root filesystem)
+- `2` - Check after root (most other filesystems)
+
+### Complete /etc/fstab Examples:
+
+**Example 1: ext4 partition**
+```
+UUID=a1b2c3d4-e5f6-7890-abcd-ef1234567890  /mnt/mydata  ext4  defaults,noatime  0  2
+```
+
+**Example 2: xfs partition**
+```
+/dev/xvdf1  /mnt/data  xfs  defaults  0  2
+```
+
+**Example 3: Multiple partitions**
+```
+UUID=xxx-xxx-xxx  /mnt/logical1  ext4  defaults  0  2
+UUID=yyy-yyy-yyy  /mnt/logical2  xfs  defaults,noatime  0  2
+```
+
+
+### Important Notes:
+
+1. **Always test with `mount -a`** before rebooting
+2. **Use UUID instead of device path** for reliability
+3. **Keep a backup** of `/etc/fstab` before editing
+4. **Incorrect fstab** can prevent system from booting
+
+---
+
 ## Complete Example: Full Workflow
 
 ```bash
@@ -415,6 +748,326 @@ sudo fsck /dev/xvdf1
 
 ---
 
+---
+
+## AWS Snapshots
+
+### What is a Snapshot?
+
+An **EBS Snapshot** is a point-in-time backup of an EBS volume. It captures the exact state of the volume at the moment the snapshot is taken, including all data, file systems, and configurations.
+
+### Key Characteristics:
+
+- **Point-in-Time Backup**: Captures volume state at specific moment
+- **Incremental**: Only stores changed blocks since last snapshot
+- **Regional**: Stored in S3 (behind the scenes) in the same region
+- **Independent**: Exists independently of the source volume
+- **Encrypted**: Can be encrypted for security
+- **Cost-Effective**: Only pay for changed data (incremental)
+
+### Use Cases:
+
+- **Backup and Recovery**: Regular backups of important data
+- **Disaster Recovery**: Restore volumes in case of failure
+- **Volume Migration**: Move volumes between AZs or regions
+- **Volume Cloning**: Create new volumes from snapshots
+- **Compliance**: Meet regulatory backup requirements
+
+---
+
+## How Snapshots Work
+
+### Snapshot Process:
+
+1. **Snapshot Request**: You initiate a snapshot creation
+2. **Data Capture**: AWS captures all data blocks on the volume
+3. **Storage**: Data is stored in S3 (managed by AWS)
+4. **Incremental Storage**: Only changed blocks are stored
+5. **Snapshot Available**: Snapshot becomes available for use
+
+### Incremental Nature:
+
+- **First Snapshot**: Stores all data blocks
+- **Subsequent Snapshots**: Only stores blocks that changed
+- **Storage Efficiency**: Reduces storage costs
+- **Fast Creation**: Subsequent snapshots are faster
+
+### Snapshot States:
+
+- **pending**: Snapshot is being created
+- **completed**: Snapshot is ready to use
+- **error**: Snapshot creation failed
+
+### Important Notes:
+
+- **Volume Performance**: Snapshots don't significantly impact volume performance
+- **Volume Status**: Volume can be in-use during snapshot
+- **Consistency**: For databases, consider quiescing before snapshot
+- **Completion Time**: Depends on volume size and data changes
+
+---
+
+## Practical Steps: Create Snapshot
+
+### Method 1: Create Snapshot from EC2 Console
+
+#### Step 1: Navigate to Volumes
+
+1. Go to **EC2 Dashboard**
+2. Click **"Volumes"** (under Elastic Block Store)
+3. Select the volume you want to snapshot
+
+#### Step 2: Create Snapshot
+
+1. Select the volume
+2. Click **"Actions"** → **"Create Snapshot"**
+3. Configure snapshot:
+   - **Name**: Enter descriptive name (e.g., "web-server-backup-2024")
+   - **Description**: Optional description
+   - **Tags**: Add tags if needed
+4. Click **"Create Snapshot"**
+
+#### Step 3: Monitor Snapshot Progress
+
+1. Go to **EC2 Dashboard** → **Snapshots**
+2. Find your snapshot
+3. Check **Status** column:
+   - **pending**: Still creating
+   - **completed**: Ready to use
+
+### Method 2: Create Snapshot from Snapshots Page
+
+1. Go to **EC2 Dashboard** → **Snapshots**
+2. Click **"Create Snapshot"**
+3. Select **"Volume"** as source type
+4. Select the volume from dropdown
+5. Enter name and description
+6. Click **"Create Snapshot"**
+
+### Step 4: Verify Snapshot
+
+1. Go to **Snapshots** page
+2. Find your snapshot
+3. Verify:
+   - **Status**: completed
+   - **Size**: Should match or be less than volume size
+   - **Start Time**: When snapshot was created
+
+---
+
+## Moving EBS Volume Between AZs and Regions Using Snapshots
+
+### Scenario 1: Move Volume to Another Availability Zone (Same Region)
+
+#### Step 1: Create Snapshot
+
+1. Go to **Volumes** → Select source volume
+2. **Actions** → **Create Snapshot**
+3. Name it (e.g., "volume-migration-snapshot")
+4. Wait for status to be **completed**
+
+#### Step 2: Create Volume from Snapshot in New AZ
+
+1. Go to **Snapshots** → Select your snapshot
+2. Click **"Actions"** → **"Create Volume from Snapshot"**
+3. Configure new volume:
+   - **Volume Type**: Select (e.g., gp3)
+   - **Size**: Same or larger than original
+   - **Availability Zone**: Select **different AZ** (e.g., us-east-1b instead of us-east-1a)
+   - **Encryption**: Optional
+4. Click **"Create Volume"**
+
+#### Step 3: Attach New Volume to Instance
+
+1. Select the new volume
+2. **Actions** → **Attach Volume**
+3. Select instance in the new AZ
+4. Specify device name
+5. Click **"Attach"**
+
+#### Step 4: Verify and Use
+
+1. SSH into the instance
+2. Verify volume:
+   ```bash
+   lsblk
+   df -hT
+   ```
+3. Mount if needed (if not auto-mounted)
+
+### Scenario 2: Move Volume to Another Region
+
+#### Step 1: Create Snapshot in Source Region
+
+1. In source region (e.g., us-east-1):
+   - Go to **Volumes** → Select volume
+   - **Actions** → **Create Snapshot**
+   - Name it (e.g., "cross-region-migration")
+   - Wait for **completed** status
+
+#### Step 2: Copy Snapshot to Destination Region
+
+1. Go to **Snapshots** → Select your snapshot
+2. Click **"Actions"** → **"Copy Snapshot"**
+3. Configure copy:
+   - **Destination Region**: Select target region (e.g., us-west-2)
+   - **Description**: Optional
+   - **Encryption**: Optional
+4. Click **"Copy Snapshot"**
+
+#### Step 3: Monitor Copy Progress
+
+1. **Switch to destination region** (us-west-2)
+2. Go to **Snapshots** → **Private Snapshots**
+3. Find your copied snapshot
+4. Wait for status to be **completed**
+
+#### Step 4: Create Volume from Snapshot in Destination Region
+
+1. In destination region, select the copied snapshot
+2. **Actions** → **Create Volume from Snapshot**
+3. Configure:
+   - **Volume Type**: Select
+   - **Size**: Same or larger
+   - **Availability Zone**: Select AZ in destination region
+4. Click **"Create Volume"**
+
+#### Step 5: Attach to Instance in Destination Region
+
+1. Select the new volume
+2. **Actions** → **Attach Volume**
+3. Select instance in destination region
+4. Attach and verify
+
+### Complete Example: Cross-Region Migration
+
+**Source:** us-east-1 (Virginia)
+**Destination:** us-west-2 (Oregon)
+
+```bash
+# Step 1: Create snapshot in us-east-1
+# (Done via console)
+
+# Step 2: Copy snapshot to us-west-2
+# (Done via console - Actions → Copy Snapshot)
+
+# Step 3: In us-west-2, create volume from snapshot
+# (Done via console)
+
+# Step 4: Attach to instance in us-west-2
+# (Done via console)
+
+# Step 5: Verify on instance
+ssh -i key.pem ec2-user@<us-west-2-instance-ip>
+lsblk
+df -hT
+```
+
+### Important Notes:
+
+- **Copy Time**: Depends on snapshot size and network speed
+- **Costs**: You pay for snapshot storage and data transfer
+- **Encryption**: Can encrypt during copy
+- **Tags**: Copy tags separately if needed
+
+---
+
+## Lifecycle Rules in Snapshots
+
+### What are Lifecycle Rules?
+
+**Lifecycle rules** automatically manage snapshot retention and deletion based on age, count, or other criteria. This helps automate backup management and reduce costs.
+
+### Benefits:
+
+- **Automated Management**: No manual deletion needed
+- **Cost Optimization**: Automatically delete old snapshots
+- **Compliance**: Maintain required retention periods
+- **Backup Rotation**: Keep recent backups, delete old ones
+
+### Creating Lifecycle Rules Using Data Lifecycle Manager (DLM)
+
+#### Step 1: Access Data Lifecycle Manager
+
+1. Go to **EC2 Dashboard**
+2. Click **"Lifecycle Manager"** (under Elastic Block Store)
+3. Click **"Create lifecycle policy"**
+
+#### Step 2: Configure Policy
+
+**Policy Details:**
+- **Policy type**: EBS Snapshot Management
+- **Description**: Enter description
+- **Target resource tags**: Select volumes to manage
+  - Example: `Environment=Production`
+
+**Policy Schedule:**
+- **Name**: Daily backups
+- **Frequency**: Daily, Weekly, or Custom
+- **Time**: Select time (UTC)
+- **Retention**: 
+  - **Count**: Keep last N snapshots (e.g., 7)
+  - **Age**: Keep snapshots for N days (e.g., 30)
+
+**Example Configuration:**
+```
+Policy Type: EBS Snapshot Management
+Target Tags: Environment=Production
+Schedule: Daily at 2:00 AM UTC
+Retention: Keep last 7 snapshots
+```
+
+#### Step 3: Add Tags
+
+- Add tags to created snapshots (optional)
+- Example: `BackupType=Automated`
+
+#### Step 4: Review and Create
+
+1. Review policy configuration
+2. Click **"Create policy"**
+
+### Lifecycle Rule Examples:
+
+**Example 1: Daily Backups, Keep 7 Days**
+```
+Frequency: Daily
+Time: 2:00 AM UTC
+Retention: 7 days
+```
+
+**Example 2: Weekly Backups, Keep 4 Weeks**
+```
+Frequency: Weekly (Sunday)
+Time: 3:00 AM UTC
+Retention: 4 weeks (28 days)
+```
+
+**Example 3: Keep Last 10 Snapshots**
+```
+Frequency: Daily
+Retention: Count = 10
+```
+
+### Manual Lifecycle Management (Alternative)
+
+If not using DLM, you can manually manage:
+
+1. **Tag Snapshots**: Use tags to identify backup sets
+2. **Script Automation**: Use AWS CLI scripts
+3. **CloudWatch Events**: Schedule snapshot creation/deletion
+4. **Lambda Functions**: Automate lifecycle management
+
+### Best Practices:
+
+1. **Tag Resources**: Use consistent tagging strategy
+2. **Test Policies**: Test lifecycle rules before production
+3. **Monitor Costs**: Regularly review snapshot storage costs
+4. **Retention Strategy**: Balance retention needs with costs
+5. **Cross-Region Copies**: Consider copying critical snapshots
+
+---
+
 ## Summary
 
 ### EBS (Elastic Block Store):
@@ -425,10 +1078,25 @@ sudo fsck /dev/xvdf1
 
 ### Partitions:
 - Logical divisions of storage devices
+- **Primary Partitions**: Up to 4 per disk
+- **Extended Partition**: Container for logical partitions
+- **Logical Partitions**: Unlimited, numbered from 5
 - Created using `fdisk` command
 - Updated with `partprobe` command
 - Formatted with `mkfs` (ext4, xfs, ext3, etc.)
-- Mounted temporarily or permanently for use
+- Mounted temporarily or permanently via `/etc/fstab`
 
-Understanding EBS and partitions is essential for managing storage in AWS EC2 instances effectively.
+### Mounting:
+- **Temporary Mount**: Lost after reboot (`mount` command)
+- **Permanent Mount**: Persists after reboot (`/etc/fstab`)
+- `/etc/fstab` has 6 fields: device, mount point, file system, options, dump, pass
+
+### Snapshots:
+- Point-in-time backups of EBS volumes
+- Incremental storage (only changed blocks)
+- Can move volumes between AZs and regions
+- Lifecycle rules automate snapshot management
+- Essential for backup, recovery, and migration
+
+Understanding EBS, partitions, mounting, and snapshots is essential for managing storage in AWS EC2 instances effectively.
 
