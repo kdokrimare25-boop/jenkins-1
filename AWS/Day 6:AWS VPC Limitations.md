@@ -205,25 +205,12 @@ AWS reserves 5 IP addresses in every subnet for internal services. These IPs can
 
 ---
 
-### 3. Route Priority Not Supported
-
-**What**:
-- No route priority or preference
-- Most specific route wins
-- No route weighting
-
-**Why**:
-- Simplified routing logic
-- Predictable routing behavior
-- Easier troubleshooting
-
 ### Route Tables Limitations Summary Table
 
 | Limitation | Limit | Can Increase |
 |------------|-------|-------------|
 | **Route Tables per VPC** | 200 (soft) | Yes |
 | **Routes per Route Table** | 50 (soft) | Yes (to 100+) |
-| **Route Priority** | Not supported | No |
 
 ---
 
@@ -549,18 +536,6 @@ AWS reserves 5 IP addresses in every subnet for internal services. These IPs can
 
 ---
 
-### 5. One-Way Routing
-
-**What**:
-- Peering connection is bidirectional
-- But routing must be configured in both VPCs
-- Route tables must be updated in both VPCs
-
-**Why**:
-- Explicit routing control
-- Security boundaries
-- Network management
-
 ### VPC Peering Limitations Summary Table
 
 | Limitation | Limit | Can Increase |
@@ -569,88 +544,6 @@ AWS reserves 5 IP addresses in every subnet for internal services. These IPs can
 | **Transitive Peering** | Not supported | No |
 | **CIDR Overlap** | Not allowed | No |
 | **Cross-Region Latency** | Higher than same-region | N/A |
-| **Routing Configuration** | Required in both VPCs | N/A |
-
----
-
-## VPC Endpoints Limitations
-
-### 1. Gateway Endpoints Limitations
-
-**What**:
-- Only supports S3 and DynamoDB
-- Cannot use for other AWS services
-- Free (no data transfer charges)
-
-**Why**:
-- Service-specific implementation
-- Optimized for high-throughput services
-- Cost optimization
-
----
-
-### 2. Interface Endpoints Per VPC Limit
-
-**What**:
-- Maximum 50 Interface Endpoints per VPC (soft limit)
-- Can be increased to 100+ by request
-
-**Why**:
-- Resource management
-- Network complexity
-- Performance optimization
-
----
-
-### 3. Interface Endpoint Cost
-
-**What**:
-- Charges per hour per endpoint (~$7.20/month)
-- Data processing charges
-- No free tier
-
-**Why**:
-- Managed service costs
-- ENI and IP address costs
-- AWS pricing model
-
----
-
-### 4. Interface Endpoint Availability
-
-**What**:
-- Interface Endpoints are AZ-specific
-- Need endpoint in each AZ for high availability
-- Single endpoint = single point of failure
-
-**Why**:
-- AZ-level redundancy
-- High availability design
-- Network architecture
-
----
-
-### 5. Endpoint Policy Limitations
-
-**What**:
-- Endpoint policies control access
-- Resource-based policies also apply
-- Both must allow access
-
-**Why**:
-- Security boundaries
-- Multiple layers of security
-- Access control
-
-### VPC Endpoints Limitations Summary Table
-
-| Limitation | Limit | Can Increase |
-|------------|-------|-------------|
-| **Gateway Endpoints** | S3 and DynamoDB only | No |
-| **Interface Endpoints per VPC** | 50 (soft) | Yes (to 100+) |
-| **Interface Endpoint Cost** | ~$7.20/month per endpoint | N/A |
-| **Interface Endpoint Availability** | AZ-specific | N/A |
-| **Endpoint Policies** | Both endpoint and resource policies apply | N/A |
 
 ---
 
