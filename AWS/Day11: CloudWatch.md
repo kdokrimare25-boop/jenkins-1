@@ -828,7 +828,7 @@ sudo rpm -U ./amazon-cloudwatch-agent.rpm
 
 ```bash
 # Check if agent is installed
-which amazon-cloudwatch-agent
+which amazon-cloudwatch-agent-ctl
 
 # Check agent version
 amazon-cloudwatch-agent-ctl -v
@@ -1078,11 +1078,6 @@ sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a start -
 sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a stop -m ec2
 ```
 
-#### Restart Agent
-
-```bash
-sudo /opt/aws/amazon-cloudwatch-agent/bin/amazon-cloudwatch-agent-ctl -a restart -m ec2
-```
 
 #### Reload Configuration
 
@@ -1161,6 +1156,16 @@ curl -I https://monitoring.us-east-1.amazonaws.com
 # Ensure agent can read log files
 sudo ls -la /var/log/myapp/application.log
 ```
+
+**Note – Fixing permissions for `/var/log/nginx/access.log`:**
+
+The CloudWatch agent runs as the `cwagent` user. If collecting nginx access logs, the agent may not have read access. Add `cwagent` to the `adm` group so it can read system logs (including nginx logs that are typically readable by adm):
+
+```bash
+usermod -aG adm cwagent
+```
+
+Then restart the CloudWatch agent for the change to take effect.
 
 **Check log group exists:**
 ```bash
