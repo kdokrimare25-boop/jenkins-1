@@ -133,16 +133,17 @@ Orders Table:
 
 1. [What is Amazon RDS](#what-is-amazon-rds)
 2. [Databases Supported by RDS](#databases-supported-by-rds)
-3. [Basic RDS Architecture](#basic-rds-architecture)
-4. [High Availability Basics](#high-availability-basics)
-5. [Read Replicas Overview](#read-replicas-overview)
-6. [Backup and Restore](#backup-and-restore)
-7. [Security Basics](#security-basics)
-8. [Monitoring Overview](#monitoring-overview)
-9. [Scaling Basics](#scaling-basics)
-10. [Cost Awareness](#cost-awareness)
-11. [Common Use Cases](#common-use-cases)
-12. [Interview Questions](#interview-questions)
+3. [Basic MariaDB Operations](#basic-mariadb-operations)
+4. [Basic RDS Architecture](#basic-rds-architecture)
+5. [High Availability Basics](#high-availability-basics)
+6. [Read Replicas Overview](#read-replicas-overview)
+7. [Backup and Restore](#backup-and-restore)
+8. [Security Basics](#security-basics)
+9. [Monitoring Overview](#monitoring-overview)
+10. [Scaling Basics](#scaling-basics)
+11. [Cost Awareness](#cost-awareness)
+12. [Common Use Cases](#common-use-cases)
+13. [Interview Questions](#interview-questions)
 
 ---
 
@@ -182,6 +183,92 @@ Orders Table:
 | **Amazon Aurora** | AWS-native | High performance, scalability |
 
 > **Note:** Aurora is AWS-designed and offers better performance than standard MySQL/PostgreSQL.
+
+---
+
+## 🗄️ Basic MariaDB Operations
+
+Once connected to your RDS MariaDB instance, here are essential operations for managing databases, tables, and users.
+
+### Create a Table
+
+```sql
+-- Create a database (if needed)
+CREATE DATABASE myapp;
+USE myapp;
+
+-- Create a table
+CREATE TABLE users (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(50) NOT NULL,
+    email VARCHAR(100) UNIQUE NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Create table with foreign key
+CREATE TABLE orders (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    amount DECIMAL(10,2),
+    status VARCHAR(20) DEFAULT 'pending',
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+
+### Create User and Set Password
+
+```sql
+-- Create user with password (local connections only)
+CREATE USER 'appuser'@'localhost' IDENTIFIED BY 'SecurePassword123!';
+
+-- Create user for remote connections
+CREATE USER 'appuser'@'%' IDENTIFIED BY 'SecurePassword123!';
+
+-- Change password for existing user
+ALTER USER 'appuser'@'%' IDENTIFIED BY 'NewSecurePassword456!';
+```
+
+### Grant Remote Access to User
+
+```sql
+-- Grant all privileges on a database to user (remote access: use '%' as host)
+CREATE USER 'appuser'@'%' IDENTIFIED BY 'SecurePassword123!';
+GRANT ALL PRIVILEGES ON myapp.* TO 'appuser'@'%';
+FLUSH PRIVILEGES;
+
+-- Grant specific privileges (more secure)
+CREATE USER 'readonly_user'@'%' IDENTIFIED BY 'ReadOnlyPass!';
+GRANT SELECT ON myapp.* TO 'readonly_user'@'%';
+FLUSH PRIVILEGES;
+
+-- Grant from specific IP only (replace 203.0.113.50 with your app server IP)
+CREATE USER 'appuser'@'203.0.113.50' IDENTIFIED BY 'SecurePassword123!';
+GRANT ALL PRIVILEGES ON myapp.* TO 'appuser'@'203.0.113.50';
+FLUSH PRIVILEGES;
+```
+
+> **Note:** On RDS, ensure your Security Group allows inbound traffic on port 3306 from the application/server IP. The `%` wildcard allows connections from any host (subject to network/SG rules).
+
+### Basic MariaDB Commands
+
+```sql
+-- 1. List all databases
+SHOW DATABASES;
+
+-- 2. List all tables in current database
+SHOW TABLES;
+
+-- 3. Describe table structure (columns, types, keys)
+DESCRIBE users;
+-- or
+DESC users;
+
+-- 4. View table creation statement
+SHOW CREATE TABLE users;
+
+-- 5. List all users and their hosts
+SELECT user, host FROM mysql.user;
+```
 
 ---
 
