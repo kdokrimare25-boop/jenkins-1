@@ -1,0 +1,19 @@
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+.terraform.tfstate.lock.info
+
+# Sensitive variable files (keep terraform.tfvars out of git if it has secrets)
+# Uncomment the next line for stricter teams:
+# **/terraform.tfvars
+
+# OS
+.DS_Store

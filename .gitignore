@@ -1,0 +1,16 @@
+# Terraform (canonical tree under terraform/)
+terraform/**/.terraform/
+terraform/**/.terraform.lock.hcl
+terraform/**/*.tfstate
+terraform/**/*.tfstate.*
+terraform/**/crash.log
+terraform/**/override.tf
+terraform/**/.terraform.tfstate.lock.info
+
+# Legacy root paths (if any remain)
+.terraform/
+*.tfstate
+*.tfstate.*
+
+# OS
+.DS_Store

@@ -1,0 +1,25 @@
+# Copy to terraform.tfvars and adjust for your AWS account.
+# cp terraform.tfvars.example terraform.tfvars
+
+aws_region   = "ap-south-1"
+environment  = "dev"
+project_name = "cdec"
+cluster_name = "cdec-dev-eks"
+
+vpc_cidr             = "10.10.0.0/16"
+public_subnet_cidrs  = ["10.10.1.0/24", "10.10.2.0/24"]
+private_subnet_cidrs = ["10.10.10.0/24", "10.10.20.0/24"]
+availability_zones   = ["ap-south-1a", "ap-south-1b"]
+
+single_nat_gateway = true
+
+kubernetes_version  = null
+node_instance_types = ["t3.medium"]
+desired_size        = 2
+min_size            = 1
+max_size            = 3
+disk_size           = 50
+
+cluster_endpoint_public_access  = true
+cluster_endpoint_private_access = true
+cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
