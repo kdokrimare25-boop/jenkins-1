@@ -17,7 +17,9 @@
 // =============================================================================
 
 pipeline {
-  agent any
+  agent {
+    agent 'terraform'
+  }
 
   options {
     timestamps()              // Log lines include time — useful for long applies
@@ -30,7 +32,8 @@ pipeline {
     GIT_URL            = 'git@github.com:atulyw/cdec-b49.git'
     GIT_BRANCH         = 'terraform-v2'
     // Create this credential in Jenkins: SSH Username with private key for GitHub
-    GIT_CREDENTIALS_ID = 'github-ssh-cdec-b49'
+    GIT_CREDENTIALS_ID = 'git'
+    GIT_SSH_COMMAND = "ssh -o StrictHostKeyChecking=no"
 
     // --- Terraform working directory (DEV stack only) ---
     TF_DIR = 'terraform/environments/dev'
