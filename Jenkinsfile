@@ -18,7 +18,7 @@
 
 pipeline {
   agent {
-    agent 'terraform'
+    label 'terraform'
   }
 
   options {
