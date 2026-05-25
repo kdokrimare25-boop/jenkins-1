@@ -11,40 +11,16 @@ pipeline {
   }
 
   environment {
-    GIT_URL            = 'git@github.com:atulyw/cdec-b49.git'
-    GIT_BRANCH         = 'terraform-v2'
-    GIT_CREDENTIALS_ID = 'git'
-    GIT_SSH_COMMAND = "ssh -o StrictHostKeyChecking=no"
     TF_DIR = 'terraform/environments/dev'
   }
 
   stages {
 
-    // -------------------------------------------------------------------------
-    // 1. Checkout Code
-    // -------------------------------------------------------------------------
-    // Jenkins clones your GitHub repo over SSH so the agent has Terraform code.
-    // SSH is required because the remote URL is git@github.com:... (not HTTPS).
     stage('Checkout Code') {
       steps {
-        checkout([
-          $class: 'GitSCM',
-          branches: [[name: "*/${env.GIT_BRANCH}"]],
-          extensions: [
-            [$class: 'CloneOption', depth: 1, shallow: true, noTags: true]
-          ],
-          userRemoteConfigs: [[
-            url: "${env.GIT_URL}",
-            credentialsId: "${env.GIT_CREDENTIALS_ID}"
-          ]]
-        ])
+        git url: 'https://github.com/atulyw/cdec-b49.git', branch: 'terraform-v2'
       }
     }
-
-    // -------------------------------------------------------------------------
-    // 2. Terraform Version
-    // -------------------------------------------------------------------------
-    // Quick sanity check: Terraform is installed and on PATH.
     stage('Terraform Version') {
       steps {
         sh 'terraform version'
