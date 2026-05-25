@@ -1,20 +1,4 @@
-// =============================================================================
-// Jenkins Declarative Pipeline — Terraform DEV (AWS VPC + EKS)
-// =============================================================================
-//
-// Repository : git@github.com:atulyw/cdec-b49.git
-// Branch     : terraform-v2
-// Terraform  : terraform/environments/dev
-//
-// Suggested Jenkins job name: terraform-eks-dev-deploy
-//
-// Prerequisites on the Jenkins agent:
-//   - terraform, aws CLI installed
-//   - AWS credentials (instance role or environment)
-//   - GitHub SSH access (credential ID below must exist on Jenkins)
-//
-// No Jenkins parameters — keeps this pipeline easy to learn and maintain.
-// =============================================================================
+
 
 pipeline {
   agent {
@@ -22,20 +6,15 @@ pipeline {
   }
 
   options {
-    timestamps()              // Log lines include time — useful for long applies
-    ansiColor('xterm')        // Colored console (AnsiColor plugin)
     disableConcurrentBuilds() // One DEV deploy at a time — protects Terraform state
+    buildDiscarder(logRotator(numToKeepStr: '10')) // Keep last 10 builds
   }
 
   environment {
-    // --- Git (explicit checkout — not relying on job SCM UI alone) ---
     GIT_URL            = 'git@github.com:atulyw/cdec-b49.git'
     GIT_BRANCH         = 'terraform-v2'
-    // Create this credential in Jenkins: SSH Username with private key for GitHub
     GIT_CREDENTIALS_ID = 'git'
     GIT_SSH_COMMAND = "ssh -o StrictHostKeyChecking=no"
-
-    // --- Terraform working directory (DEV stack only) ---
     TF_DIR = 'terraform/environments/dev'
   }
 
@@ -157,13 +136,8 @@ pipeline {
     }
     always {
       echo 'Build finished. Cleaning workspace...'
-      // Requires "Workspace Cleanup" plugin — removes checkout to save disk space
-      cleanWs(
-        cleanWhenNotBuilt: false,
-        deleteDirs: true,
-        disableDeferredWipeout: true,
-        notFailBuild: true
-      )
+      // deleteDir() works without plugins; use cleanWs() instead if Workspace Cleanup is installed
+      deleteDir()
     }
   }
 }
