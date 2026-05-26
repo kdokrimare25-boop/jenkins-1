@@ -22,8 +22,12 @@ pipeline {
 
     stage('Terraform Version') {
       steps {
-        // Wrapping with credentials so 'aws s3 ls' has access
-        withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+        withCredentials([[
+          $class: 'AmazonWebServicesCredentialsBinding', 
+          credentialsId: 'aws-creds', 
+          accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+          secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+        ]]) {
           sh 'terraform version'
           sh 'aws --version'
           sh 'aws s3 ls'
@@ -34,7 +38,12 @@ pipeline {
     stage('Terraform Init') {
       steps {
         dir("${env.TF_DIR}") {
-          withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+          withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding', 
+            credentialsId: 'aws-creds', 
+            accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+          ]]) {
             sh 'terraform init -input=false'
           }
         }
@@ -60,7 +69,12 @@ pipeline {
     stage('Terraform Plan') {
       steps {
         dir("${env.TF_DIR}") {
-          withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+          withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding', 
+            credentialsId: 'aws-creds', 
+            accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+          ]]) {
             sh 'terraform plan -input=false -out=tfplan'
           }
         }
@@ -76,7 +90,12 @@ pipeline {
     stage('Terraform Apply') {
       steps {
         dir("${env.TF_DIR}") {
-          withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+          withCredentials([[
+            $class: 'AmazonWebServicesCredentialsBinding', 
+            credentialsId: 'aws-creds', 
+            accessKeyVariable: 'AWS_ACCESS_KEY_ID', 
+            secretKeyVariable: 'AWS_SECRET_ACCESS_KEY'
+          ]]) {
             sh 'terraform apply -input=false -auto-approve tfplan'
           }
         }
