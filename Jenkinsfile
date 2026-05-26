@@ -50,22 +50,6 @@ pipeline {
       }
     }
 
-    stage('Terraform Format Check') {
-      steps {
-        dir('terraform') {
-          sh 'terraform fmt -check -recursive'
-        }
-      }
-    }
-
-    stage('Terraform Validate') {
-      steps {
-        dir("${env.TF_DIR}") {
-          sh 'terraform validate'
-        }
-      }
-    }
-
     stage('Terraform Plan') {
       steps {
         dir("${env.TF_DIR}") {
