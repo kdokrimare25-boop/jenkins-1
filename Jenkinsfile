@@ -22,16 +22,21 @@ pipeline {
 
     stage('Terraform Version') {
       steps {
-        sh 'terraform version'
-        sh 'aws --version'
-        sh 'aws s3 ls'
+        // Wrapping with credentials so 'aws s3 ls' has access
+        withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+          sh 'terraform version'
+          sh 'aws --version'
+          sh 'aws s3 ls'
+        }
       }
     }
 
     stage('Terraform Init') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform init -input=false'
+          withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+            sh 'terraform init -input=false'
+          }
         }
       }
     }
@@ -55,7 +60,9 @@ pipeline {
     stage('Terraform Plan') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform plan -input=false -out=tfplan'
+          withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+            sh 'terraform plan -input=false -out=tfplan'
+          }
         }
       }
     }
@@ -69,7 +76,9 @@ pipeline {
     stage('Terraform Apply') {
       steps {
         dir("${env.TF_DIR}") {
-          sh 'terraform apply -input=false -auto-approve tfplan'
+          withCredentials([usernamePassword(credentialsId: 'aws-creds', passwordVariable: 'AWS_SECRET_ACCESS_KEY', usernameVariable: 'AWS_ACCESS_KEY_ID')]) {
+            sh 'terraform apply -input=false -auto-approve tfplan'
+          }
         }
       }
     }
