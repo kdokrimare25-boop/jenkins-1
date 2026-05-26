@@ -1,20 +1,3 @@
-// =============================================================================
-// Jenkins Declarative Pipeline — Terraform DEV (AWS VPC + EKS)
-// =============================================================================
-//
-// Repository : https://github.com/atulyw/cdec-b49.git
-// Branch     : terraform-v2
-// Terraform  : terraform/environments/dev
-//
-// Suggested Jenkins job name: terraform-eks-dev-deploy
-//
-// Agent label: terraform (must have terraform + aws CLI, or use Install stage below)
-//
-// Optional plugins (add to options {} after install):
-//   Timestamper → timestamps()
-//   AnsiColor   → ansiColor('xterm')
-// =============================================================================
-
 pipeline {
   agent {
     label 'terraform'
@@ -34,28 +17,6 @@ pipeline {
     stage('Checkout Code') {
       steps {
         git url: 'https://github.com/atulyw/cdec-b49.git', branch: 'terraform-v2'
-      }
-    }
-
-    // Skip this stage if your agent already has terraform and aws CLI installed.
-    stage('Install Terraform & AWS CLI') {
-      steps {
-        sh '''
-          set -e
-          apt-get update
-          apt-get install -y unzip curl wget gnupg software-properties-common
-
-          wget -O- https://apt.releases.hashicorp.com/gpg | gpg --dearmor > /usr/share/keyrings/hashicorp-archive-keyring.gpg
-          echo "deb [signed-by=/usr/share/keyrings/hashicorp-archive-keyring.gpg] https://apt.releases.hashicorp.com $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/hashicorp.list
-          apt-get update && apt-get install -y terraform
-
-          curl -s "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
-          unzip -q awscliv2.zip
-          ./aws/install
-
-          terraform version
-          aws --version
-        '''
       }
     }
 
