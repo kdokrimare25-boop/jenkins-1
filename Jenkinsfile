@@ -24,6 +24,7 @@ pipeline {
       steps {
         sh 'terraform version'
         sh 'aws --version'
+        sh 'aws s3 ls'
       }
     }
 
